@@ -1,0 +1,95 @@
+---
+title       : Mortality Calculator Shiny App
+subtitle    : Data Products Course Project
+author      : Mark Jones
+job         : Data Scientis
+framework   : html5slides        # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+widgets     : []            # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+knit        : slidify::knit2slides
+---
+
+### The Mortality Calculator Shiny Application
+
+<div style='text-align: center;'>
+    <img height='560' img width='680' src='ss.png' />
+</div>
+[*Mortality Calculator*](https://sobolev.shinyapps.io/Data_Products_Course_Project)
+
+--- #id 
+
+### Based On Social Security Administration 2010 Life Table
+
+```{r, echo=FALSE,cache=TRUE}
+library(knitr)
+life.table<-data.frame(read.csv("SS_2010_Life.csv", header = TRUE, sep = ","))
+kable(head(life.table[,1:4]),format="html")
+```
+
+- The most current table
+- Different mortality expectation by gender
+
+---
+
+### Calculates Expected Lifetime Given Current Age and Gender
+
+```{r,echo=FALSE,cache=TRUE,fig.width=7}
+library(reshape2)
+life.table$Male_Prob_Death<-NULL
+life.table$Female_Prob_Death<-NULL
+new.life<-melt(life.table,id=c("Age"))
+library(ggplot2)
+
+g<-ggplot(subset(new.life,variable %in% c("Male_Exp_Years","Female_Exp_Years")),aes(x=Age,y=value))+
+              geom_bar(stat="identity",fill="dark red")+
+              facet_wrap(~variable,scales="free")+
+              ggtitle("Expected Years Until Death by Gender")+
+              ylab("Years Until Death")+
+              xlab("Current Age")+
+              theme(panel.background = element_rect(fill = 'grey75'),
+              plot.title = element_text(size=14,lineheight=.8, vjust=1,face="bold"),
+              axis.title.x = element_text(face="bold", size=12),
+              axis.text.x = element_text(face="bold", size=10),
+              axis.title.y = element_text(face="bold", size=12))
+g
+```
+
+---
+
+### Calculates Probability of Living to Target Age Given Current Age and Gender
+
+```{r,echo=FALSE,cache=TRUE,fig.width=7}
+library(data.table)
+new.life<-data.table(new.life)
+new.life<-new.life[Age>=32 & Age<=75 & variable %in% c("Male_Lives","Female_Lives")]
+base.lives.male<-new.life[Age==32 & variable=="Male_Lives",value]
+base.lives.female<-new.life[Age==32 & variable=="Female_Lives",value]
+new.life$value<-new.life[,.(value=value/ifelse(variable=="Male_Lives",base.lives.male,base.lives.female))]
+g<-ggplot(new.life,aes(x=Age,y=value))+
+    geom_bar(stat="identity",fill="dark red")+
+              facet_wrap(~variable,scales="free")+
+              ggtitle("Probability of Living To Target Age by Year and Gender")+
+              ylab("Probability of Living")+
+              xlab("Incremental Age")+
+              theme(panel.background = element_rect(fill = 'grey75'),
+              plot.title = element_text(size=14,lineheight=.8, vjust=1,face="bold"),
+              axis.title.x = element_text(face="bold", size=12),
+              axis.text.x = element_text(face="bold", size=10),
+              axis.title.y = element_text(face="bold", size=12))
+g
+```
+
+---
+
+### Advantages of Application
+
+1. Easy to use
+2. Only needs three inputs
+3. Interactive so user can investigate multiple scenarios
+4. Based on most current mortality data available
+5. Distinguishes results by gender and current age
+
+
+
